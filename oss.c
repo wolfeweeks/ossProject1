@@ -11,7 +11,7 @@
 
 int main(int argc, char* argv[]) {
   // Initialize variables to hold command line options
-  int proc = 1, simul = 1, iter = 3;
+  int proc = 1, simul = 1, iter = 1;
 
   // iterStr used for execl command
   char iterStr[2];
@@ -28,8 +28,6 @@ int main(int argc, char* argv[]) {
       break;
     case 't':
       iter = atoi(optarg);
-      // convert iteration number to a string for execl command
-      snprintf(iterStr, sizeof(iterStr), "%d", iter);
       break;
     case 'h':
       printf("Usage: oss [-h] [-n proc] [-s simul] [-t iter]\n");
@@ -40,23 +38,27 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  pid_t pid;
-  int status;
+  // convert iteration number to a string for execl command
+  snprintf(iterStr, sizeof(iterStr), "%d", iter);
 
-  // fork a child process
-  pid = fork();
+  int i;
+  for (i = 0; i < proc; i++) {
+    // fork a child process
+    pid_t pid = fork();
 
-  if (pid < 0) {
-    // fork failed
-    printf("Fork failed!\n");
-    exit(1);
-  } else if (pid == 0) {
-    //exec .worker process
-    execl("./worker", "./worker", iterStr, NULL);
-  } else {
-    // wait for child process to finish
-    waitpid(pid, &status, 0);
+    if (pid < 0) {
+      // fork failed
+      printf("Fork failed!\n");
+      exit(1);
+    } else if (pid == 0) {
+      //exec .worker process
+      execl("./worker", "./worker", iterStr, NULL);
+    } else {
+      // wait for child process to finish
+    }
   }
+  wait(0);
+  printf("asdf\n");
 
   return 0;
 }
