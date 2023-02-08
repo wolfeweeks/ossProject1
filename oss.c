@@ -31,6 +31,10 @@ int main(int argc, char* argv[]) {
       break;
     case 'h':
       printf("Usage: oss [-h] [-n proc] [-s simul] [-t iter]\n");
+      printf("\t-h (optional) shows a help message\n");
+      printf("\t-n (optional) is the total number of child processes to create\n");
+      printf("\t-s (optional) is the maximum number of concurrent child processes\n");
+      printf("\t-t (optional) is the number of iterations each child process should do\n");
       return 0;
     default:
       printf("Invalid option\n");
@@ -41,24 +45,36 @@ int main(int argc, char* argv[]) {
   // convert iteration number to a string for execl command
   snprintf(iterStr, sizeof(iterStr), "%d", iter);
 
-  int i;
-  for (i = 0; i < proc; i++) {
-    // fork a child process
-    pid_t pid = fork();
+  int running = 0;
+  int remaining = proc;
 
-    if (pid < 0) {
-      // fork failed
-      printf("Fork failed!\n");
-      exit(1);
-    } else if (pid == 0) {
-      //exec .worker process
-      execl("./worker", "./worker", iterStr, NULL);
+  while (remaining > 0) {
+    // if there is room for more child processes
+    if (running < simul) {
+      remaining--;
+      running++;
+
+      // fork a child process
+      pid_t pid = fork();
+
+      if (pid < 0) {
+        // fork failed
+        printf("Fork failed!\n");
+        exit(1);
+      } else if (pid == 0) {
+        // exec .worker process
+        execl("./worker", "./worker", iterStr, NULL);
+      }
     } else {
-      // wait for child process to finish
+      // wait for a child to finish if there is no more room
+      wait(0);
+      running--;
     }
   }
-  wait(0);
-  printf("asdf\n");
+
+  // wait for all remaining child processes to finish
+  // idea found from here: https://stackoverflow.com/questions/19461744/how-to-make-parent-wait-for-all-child-processes-to-finish
+  while (wait(0) > 0);
 
   return 0;
 }
